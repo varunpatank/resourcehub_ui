@@ -26,6 +26,7 @@ import {
   Globe,
   Cpu
 } from "lucide-react";
+import { MainAccount } from "@/components/appWrite";
 
 interface IconPosition {
   top: number;
@@ -81,7 +82,15 @@ export default function SignIn() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/chat");
+    try {
+      await MainAccount.createEmailPasswordSession(
+        formData.email,
+        formData.password
+      );
+    } catch (error) {
+      router.push("/auth/signup");
+    }
+    router.push("/search");
   };
 
   return (

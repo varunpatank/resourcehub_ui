@@ -30,6 +30,8 @@ import {
   Cpu,
   Sparkles
 } from "lucide-react";
+import { MainAccount, Mainclient } from "@/components/appWrite";
+import { Databases, ID } from "appwrite";
 
 interface IconPosition {
   top: number;
@@ -89,7 +91,39 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/chat");
+
+    try {
+      const response = await MainAccount.create(
+        ID.unique(),
+        formData.email,
+        formData.password,
+        formData.name,
+      );
+      console.log(response); // Success
+
+      await MainAccount.createEmailPasswordSession(
+        formData.email,
+        formData.password
+      );
+
+      console.log('User logged in successfully.');
+
+      const databases = new Databases(Mainclient);
+      const result = await databases.createDocument(
+        '67b9d719001483b711ef', // databaseId
+        '67b9d7dd001e709b233d', // collectionId
+        response.$id, // documentId
+        {
+          Username: formData.username,
+          GHStudent: formData.isGithubStudent,
+          HCStudent: formData.isHackClubStudent
+        }, // data
+        ["read(\"any\")"] // permissions (optional)
+      );
+
+    } catch (error: any) {
+      console.error(error);
+    }
   };
 
   return (

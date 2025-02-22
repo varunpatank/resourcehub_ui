@@ -10,83 +10,28 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ExternalLink, Search } from "lucide-react";
+import { Mainclient } from '@/components/appWrite';
+import { Storage } from 'appwrite';
 
 interface Offer {
   name: string;
   description: string;
   url: string;
-  forUseBy: string;
+  forUseBy: keyof typeof forUseByParse;
 }
 
 interface Response {
   [category: string]: Offer[];
 }
 
-// Expanded mock data with more comprehensive offerings
-const mockOffers: Response = {
-  "Development": [
-    {
-      name: "GitHub Student Developer Pack",
-      description: "Access to professional developer tools and services",
-      url: "https://education.github.com/pack",
-      forUseBy: "students"
-    },
-    {
-      name: "JetBrains Student Pack",
-      description: "Free access to all JetBrains IDEs",
-      url: "https://www.jetbrains.com/community/education/",
-      forUseBy: "students"
-    },
-    {
-      name: "Visual Studio Code",
-      description: "Free, powerful code editor with extensive plugin support",
-      url: "https://code.visualstudio.com/",
-      forUseBy: "everyone"
-    }
-  ],
-  "Cloud": [
-    {
-      name: "AWS Educate",
-      description: "Free access to AWS services and training",
-      url: "https://aws.amazon.com/education/awseducate/",
-      forUseBy: "students"
-    },
-    {
-      name: "Microsoft Azure for Students",
-      description: "Free Azure credits and developer tools",
-      url: "https://azure.microsoft.com/free/students/",
-      forUseBy: "students"
-    }
-  ],
-  "Design": [
-    {
-      name: "Figma Education",
-      description: "Professional design tools for students",
-      url: "https://www.figma.com/education/",
-      forUseBy: "students"
-    },
-    {
-      name: "Adobe Creative Cloud",
-      description: "Special student pricing for Creative Cloud apps",
-      url: "https://www.adobe.com/creativecloud/buy/students.html",
-      forUseBy: "students"
-    }
-  ],
-  "Hosting": [
-    {
-      name: "Vercel for Students",
-      description: "Free hosting and deployment platform",
-      url: "https://vercel.com/education",
-      forUseBy: "students"
-    },
-    {
-      name: "Netlify",
-      description: "Free tier for hosting static sites and web apps",
-      url: "https://www.netlify.com/",
-      forUseBy: "everyone"
-    }
-  ]
-};
+const forUseByParse = {
+  GHstudents : 'GitHub Students',
+  hackclubbers : 'Hack Clubbers',
+  everyone: 'Everyone',
+  leaders: 'Leaders',
+  students: 'GHstudents',
+  clubbers: 'Hack Clubbers',
+}
 
 // Helper function to filter offers based on query
 function filterOffers(offers: Response, query: string): Response {
@@ -108,17 +53,44 @@ function filterOffers(offers: Response, query: string): Response {
 }
 
 export default function SearchResults({ query }: { query: string }) {
-  const [results, setResults] = useState<Response>({});
-  const [loading, setLoading] = useState(true);
+// Correct state declaration with updater function
+const [offers, setOffers] = useState<Response>({});
+const [results, setResults] = useState<Response>({});
+const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate loading state
+useEffect(() => {
+    const fetchOffers = async () => {
+        try {
+            const storage = new Storage(Mainclient);
+
+            const fileURL = storage.getFileDownload(
+                '67b9e22b0016f693c112', // bucketId
+                '67b9e243000ef39a9d64' // fileId
+            );
+
+            const response = await fetch(fileURL);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            setOffers(data); // Use the updater function to set state
+        } catch (error) {
+            console.error('Error fetching offers:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchOffers();
+}, []);
+
+useEffect(() => {
     setLoading(true);
-    // Filter results client-side
-    const filtered = filterOffers(mockOffers, query);
+    const filtered = filterOffers(offers, query);
     setResults(filtered);
     setLoading(false);
-  }, [query]);
+    console.log(offers);
+}, [offers, query]); // Add 'offers' to the dependency array
 
   if (loading) {
     return (
@@ -159,7 +131,7 @@ export default function SearchResults({ query }: { query: string }) {
                   <Card key={index} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <CardTitle>{offer.name}</CardTitle>
-                      <CardDescription>For {offer.forUseBy}</CardDescription>
+                      <CardDescription>For {forUseByParse[offer.forUseBy]}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <p className="text-muted-foreground">{offer.description}</p>
